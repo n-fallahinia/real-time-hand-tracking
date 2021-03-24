@@ -3,12 +3,8 @@
 Navid Fallahinia - 21/12/2020
 BioRobotics Lab
 
-usage: generate_tfrecord.py [-h] [-x XML_DIR] [-l LABELS_PATH] [-o OUTPUT_PATH] [-i IMAGE_DIR] [-c CSV_PATH]
+usage: inference_test.py [-h] [-tdir MDL_DIR] [-l LABELS_PATH] [-fdir EST_DIR]
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -x XML_DIR, --xml_dir XML_DIR
-                        Path to the folder where the input .xml files are stored.
 """
 
 import os
@@ -29,15 +25,20 @@ import utils.camerautils as camera
 # Initiate argument parser
 parser = argparse.ArgumentParser(
     description="Sample inference test from live camera feed ")
-parser.add_argument("-dir",
+parser.add_argument("-tdir",
                     "--model_dir",
                     help="Path to the folder where the model is stored.",
                     default='./inference_model/inference_graph_1',
                     type=str)
-parser.add_argument("-label",
+parser.add_argument("-l",
                     "--label_dir",
                     help="Path to the label map file.",
                     default='./inference_model/labelmap.pbtxt',
+                    type=str)
+parser.add_argument("-fdir",
+                    "--estimation_dir",
+                    help="Path to the folder where force estimation model is stored.",
+                    # default='./inference_model/labelmap.pbtxt',
                     type=str)
 args = parser.parse_args()
  
@@ -57,13 +58,22 @@ if __name__ == '__main__':
         # Visible devices must be set before GPUs have been initialized
             print(e)
 
-    PATH_TO_SAVED_MODEL = args.model_dir + "/saved_model"
+    PATH_TO_TRACKING_SAVED_MODEL = args.model_dir + "/saved_model"
     PATH_TO_LABELS = args.label_dir
+    PATH_TO_ESTIMATION_SAVED_MODEL = args.estimation_dir + "/saved_model"
 
     category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
-    print('Loading model...', end='')
+
+    print('Loading the detection model...', end='')
     start_time = time.time()
-    model = tf.saved_model.load(PATH_TO_SAVED_MODEL)
+    detection_model = tf.saved_model.load(PATH_TO_TRACKING_SAVED_MODEL)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print('Done! Took {} seconds'.format(elapsed_time))
+
+    print('Loading the estimation model...', end='')
+    start_time = time.time()
+    estimation_model = tf.saved_model.load(PATH_TO_ESTIMATION_SAVED_MODEL)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print('Done! Took {} seconds'.format(elapsed_time))
@@ -76,7 +86,11 @@ if __name__ == '__main__':
     camera.init()
     while (True):
         # Capturing image
-        camera.capture(model, category_index)
+        box_images = camera.capture(detection_model, category_index, display=False)
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        #   The force estimation will go in here
+        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     # Discconecting the camera

@@ -5,6 +5,7 @@ import numpy as np
 import six
 import time
 import glob
+import math
 
 from six import BytesIO
 from PIL import Image, ImageDraw, ImageFont
@@ -20,6 +21,18 @@ def load_image_into_numpy_array(path):
   (im_width, im_height) = image.size
   return np.array(image.getdata()).reshape(
       (im_height, im_width, 3)).astype(np.uint8)
+
+def image_crop_single_image(image_np, box, use_normalized_coordinates=True):
+  ymin, xmin, ymax, xmax = box
+  image_pil = Image.fromarray(np.uint8(image_np)).convert('RGB')
+  im_width, im_height = image_pil.size
+  im_height, im_width, color = image_np.shape
+  if use_normalized_coordinates:
+    (left, right, top, bottom) = ( math.floor(xmin * im_width), math.floor(xmax * im_width),
+                                  math.floor(ymin * im_height), math.floor(ymax * im_height) )  
+    return image_np[top:bottom, left:right]
+  else:
+    return image_np
 
 def run_inference_for_single_image(model, image):
   image = np.asarray(image)
