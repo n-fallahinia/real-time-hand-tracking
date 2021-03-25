@@ -61,13 +61,13 @@ def init(camIndex=0):
     # autoAdjust()
     # setGain(absValue = 0)
     # setShutter(absValue = 18)
-    setFramerate(absValue=10)
+    setFramerate(absValue=20)
     print_frame_rate()
     print('Starting capture...')
     cam.startCapture()
     camInitialised = True
 
-def capture(model, category_index, display=False, min_score_thresh=0.4):
+def capture(model, category_index, vid ,display=False, save_vid=False ,min_score_thresh=0.5):
     """
         This function captures an image and optionally displays the image using openCV.
     """
@@ -79,6 +79,8 @@ def capture(model, category_index, display=False, min_score_thresh=0.4):
         bgrImg = rawImg.convert(PyCapture2.PIXEL_FORMAT.BGR)
         image_np_bgr = np.array(bgrImg.getData()).reshape((bgrImg.getRows(), bgrImg.getCols(),3)).astype(np.uint8)
         image_np = cv2.cvtColor(image_np_bgr, cv2.COLOR_BGR2RGB)
+        if save_vid:
+            vid.write(image_np)
         output_dict = run_inference_for_single_image(model, image_np)
         if display:
             vis_util.visualize_boxes_and_labels_on_image_array(
