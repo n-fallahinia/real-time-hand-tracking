@@ -24,8 +24,6 @@ def load_image_into_numpy_array(path):
 
 def image_crop_single_image(image_np, box, use_normalized_coordinates=True):
   ymin, xmin, ymax, xmax = box
-  image_pil = Image.fromarray(np.uint8(image_np)).convert('RGB')
-  im_width, im_height = image_pil.size
   im_height, im_width, color = image_np.shape
   if use_normalized_coordinates:
     (left, right, top, bottom) = ( math.floor(xmin * im_width), math.floor(xmax * im_width),

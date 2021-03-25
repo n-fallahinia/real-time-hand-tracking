@@ -18,8 +18,8 @@ from utils.inferenceutils import *
 
 # Configurations: 
 _PIXEL_FORMAT = PyCapture2.PIXEL_FORMAT.RAW16
-_maxWidth = 640
-_maxHeight = 480
+_maxWidth = 720
+_maxHeight = 1024
 
 # Connection to camera
 bus = PyCapture2.BusManager()
@@ -58,14 +58,16 @@ def init(camIndex=0):
     cam.setFormat7ConfigurationPacket(fmt7pktInf.recommendedBytesPerPacket, fmt7imgSet)
     cam.setConfiguration(grabMode = PyCapture2.GRAB_MODE.DROP_FRAMES)
     # adjusting camera settings
-    autoAdjust()
-    setFramerate()
+    # autoAdjust()
+    # setGain(absValue = 0)
+    # setShutter(absValue = 18)
+    setFramerate(absValue=10)
     print_frame_rate()
     print('Starting capture...')
     cam.startCapture()
     camInitialised = True
 
-def capture(model, category_index, display=False):
+def capture(model, category_index, display=False, min_score_thresh=0.4):
     """
         This function captures an image and optionally displays the image using openCV.
     """
@@ -75,7 +77,8 @@ def capture(model, category_index, display=False):
         # try retrieving the last image from the camera
         rawImg = cam.retrieveBuffer()
         bgrImg = rawImg.convert(PyCapture2.PIXEL_FORMAT.BGR)
-        image_np = np.array(bgrImg.getData(), dtype="uint8").reshape((bgrImg.getRows(), bgrImg.getCols(),3) )
+        image_np_bgr = np.array(bgrImg.getData()).reshape((bgrImg.getRows(), bgrImg.getCols(),3)).astype(np.uint8)
+        image_np = cv2.cvtColor(image_np_bgr, cv2.COLOR_BGR2RGB)
         output_dict = run_inference_for_single_image(model, image_np)
         if display:
             vis_util.visualize_boxes_and_labels_on_image_array(
@@ -86,19 +89,21 @@ def capture(model, category_index, display=False):
             category_index,
             instance_masks=output_dict.get('detection_masks_reframed', None),
             use_normalized_coordinates=True,
-            line_thickness=3)           
+            min_score_thresh=min_score_thresh,
+            line_thickness=3)       
+            image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)    
             cv2.imshow('frame',image_np)
             cv2.waitKey(10)
         # generating the cropped images
-        num_box_images = len([i for i in output_dict['detection_scores'] if i > 0.4])
-        box_images = []
-        if num_box_images == 0:
-            return
-        for idx in range(num_box_images):
-            box = tuple(output_dict['detection_boxes'][idx].tolist())
-            img_cropped = image_crop_single_image(image_np, box)
-            box_images.append(img_cropped)
-        return box_images
+        num_box_images = len([i for i in output_dict['detection_scores'] if i > min_score_thresh])
+        # box_images = []
+        # if num_box_images == 0:
+        #     return
+        # for idx in range(num_box_images):
+        #     box = tuple(output_dict['detection_boxes'][idx].tolist())
+        #     img_cropped = image_crop_single_image(image_np, box)
+        #     box_images.append(img_cropped)
+        return num_box_images
 
     except PyCapture2.Fc2error as fc2Err:
         print("Error retrieving buffer : ", fc2Err)
