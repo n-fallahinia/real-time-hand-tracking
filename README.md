@@ -1,4 +1,4 @@
-# Multi Finger Detection 
+# Real-Time Multi Finger Tracking 
 [![alt tag](data/logo.png)](http://robotics.coe.utah.edu/)
 
 _Author: Navid Fallahinia, University of Utah Robotics Center_
@@ -27,34 +27,26 @@ Given an image of a human finger, returns the bounding box around each finger in
 - The original paper: [here](https://arxiv.org/abs/1512.02325)
 - Some implementation: [here](https://towardsdatascience.com/understanding-ssd-multibox-real-time-object-detection-in-deep-learning-495ef744fab)
 
-The model is traind using Fingernail dataset (~8.6 GB) that contains raw and annotated finger images. 
+The trained detector must be placed in the `inference_graph` directory. Unfortunately, the finger dataset for training the detector is not publicly available at this time. However, you can email the [author](n.fallahinia@utah.edu) to receive the datatset. 
 
-Unfortunately, the Fingernail dataset is not publicly available at this time. However, you can email the [author](n.fallahinia@utah.edu) to receive the datatset. 
+The tracker model is based on MIL (Multiple Instance Learning) implementation in [here](https://faculty.ucmerced.edu/mhyang/papers/cvpr09a.pdf). The cv::tracker class reference is used for updating the tracker state. The tracker is being called every 10 frames unless there is an unsuccesfull update from the tracker object.
 
 ## Quick Run
 
-1. **Build the TFrecords**: make sure you complete this step before training
+1. **Tracking from a recorded video**: This is for the case when you want to track the fingers in a video feed. Simply run:
 
 ```bash
-$ python3 tfrecords_convertor.py --labels_path {$LABELS_PATH} --output_path {$OUTPUT_PATH} --image_dir {$IMAGE_DIR}
+$ multi_tracking_video_test.py [-v VIDEO_DIR] [-t TRACKER_MDL] [-d SAVE_DIR]
 ```
 
-2. **Setup the training parameters**: There is a `mobilenet_v2.config` file for you under the main directory. You can set the parameters for the training. Tensorflow OD API uses this config file for precessing the training and evaluation tasks.
+2. **Tracking from a live camera feed**: This is the case where you have access to camera and want to track the fingers in real-time from the camera frames. At this point, this code is only capable of working with Flycapture cameras. You can change the camera settings from the `cam_settings.yml` file. 
 
-3. **Train the model**. Simply run:
 ```
-python3 model_main_tf2.py --model_dir {$MODEL_DIR} --num_train_steps {$NUM_TRAIN_STEPS} --pipeline_config_path {$PIPELINE_CONFIG_PATH} --alsologtostderr 
-```
-4. **Export the model**. Once the training is over, you should export the ckpt-?-data checkpoint into TF2 saved model. This can be done by running the following command:
-```
- python3 exporter_main_v2.py --trained_checkpoint_dir {$TRAIN_DIR} --output_directory {$NUM_TRAIN_STEPS} --pipeline_config_path {$OUTPUT_PATH} 
-```
- 5. **Test the model**. You can run the inference test to see the detected fingers.
+python3 inference_test.py [-h] [-tdir MDL_DIR] [-l LABELS_PATH] [-fdir EST_DIR]
 
+```
+**This is a simple demo for this code:**
 <p align="center">
-    <img src="data/img1.png" width="250" title="">
-    <img src="data/img2.png" width="250" alt="">
-    <img src="data/img3.png" width="250" alt="">
-    <img src="data/img4.png" width="250" alt="">
+    <img src="data/demo.gif" width="250" title="">
 </p>
-# real-time-hand-tracking
+
