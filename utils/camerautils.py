@@ -17,7 +17,7 @@ from object_detection.utils import visualization_utils as vis_util
 from utils.inferenceutils import *
 
 # Configurations: 
-_PIXEL_FORMAT = PyCapture2.PIXEL_FORMAT.RAW16
+_PIXEL_FORMAT = PyCapture2.PIXEL_FORMAT.RAW8
 _maxWidth = 720
 _maxHeight = 1024
 
@@ -67,7 +67,7 @@ def init(camIndex=0):
     cam.startCapture()
     camInitialised = True
 
-def capture(model, category_index, vid ,display=False, save_vid=False ,min_score_thresh=0.5):
+def capture(model, category_index, vid ,display=False, save_vid=False ,min_score_thresh=0.45):
     """
         This function captures an image and optionally displays the image using openCV.
     """
@@ -80,7 +80,7 @@ def capture(model, category_index, vid ,display=False, save_vid=False ,min_score
         image_np_bgr = np.array(bgrImg.getData()).reshape((bgrImg.getRows(), bgrImg.getCols(),3)).astype(np.uint8)
         image_np = cv2.cvtColor(image_np_bgr, cv2.COLOR_BGR2RGB)
         if save_vid:
-            vid.write(image_np)
+            vid.write(image_np_bgr)
         output_dict = run_inference_for_single_image(model, image_np)
         if display:
             vis_util.visualize_boxes_and_labels_on_image_array(
@@ -95,7 +95,6 @@ def capture(model, category_index, vid ,display=False, save_vid=False ,min_score
             line_thickness=3)       
             image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)    
             cv2.imshow('frame',image_np)
-            cv2.waitKey(10)
         # generating the cropped images
         num_box_images = len([i for i in output_dict['detection_scores'] if i > min_score_thresh])
         # box_images = []

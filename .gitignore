@@ -1,6 +1,6 @@
 # specific files
 .vscode/
-
+*.avi
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

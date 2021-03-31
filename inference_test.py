@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     PATH_TO_TRACKING_SAVED_MODEL = args.model_dir + "/saved_model"
     PATH_TO_LABELS = args.label_dir
-    PATH_TO_ESTIMATION_SAVED_MODEL = args.estimation_dir + "/saved_model"
+    # PATH_TO_ESTIMATION_SAVED_MODEL = args.estimation_dir + "/saved_model"
 
     category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
@@ -71,12 +71,12 @@ if __name__ == '__main__':
     elapsed_time = end_time - start_time
     print('Done! Took {} seconds'.format(elapsed_time))
 
-    print('Loading the estimation model...', end='')
-    start_time = time.time()
-    estimation_model = tf.saved_model.load(PATH_TO_ESTIMATION_SAVED_MODEL)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print('Done! Took {} seconds'.format(elapsed_time))
+    # print('Loading the estimation model...', end='')
+    # start_time = time.time()
+    # estimation_model = tf.saved_model.load(PATH_TO_ESTIMATION_SAVED_MODEL)
+    # end_time = time.time()
+    # elapsed_time = end_time - start_time
+    # print('Done! Took {} seconds'.format(elapsed_time))
 
     # Print PyCapture2 Library Information
     camera.print_build_info()
@@ -84,9 +84,13 @@ if __name__ == '__main__':
     camera.printNumOfCam()
     # Initializing the camera
     camera.init()
+    # Video recording
+    fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
+    vid = cv2.VideoWriter('output.avi',fourcc, 20.0, (720, 1024))
     while (True):
         # Capturing image
-        box_images = camera.capture(detection_model, category_index, display=False)
+        box_images = camera.capture(detection_model, category_index, vid, display=True, save_vid=False)
+        # print(box_images)
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         #   The force estimation will go in here
         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -94,6 +98,7 @@ if __name__ == '__main__':
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     # Discconecting the camera
+    vid.release()
     cv2.destroyAllWindows()
     camera.close()
 

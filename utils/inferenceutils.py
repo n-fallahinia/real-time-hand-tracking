@@ -32,6 +32,13 @@ def image_crop_single_image(image_np, box, use_normalized_coordinates=True):
   else:
     return image_np
 
+def find_abstract_boxes(image_np, box):
+  ymin, xmin, ymax, xmax = box
+  im_height, im_width, color = image_np.shape
+  (left, right, top, bottom) = ( math.floor(xmin * im_width), math.floor(xmax * im_width),
+                                  math.floor(ymin * im_height), math.floor(ymax * im_height) )  
+  return (left, right, top, bottom)
+
 def run_inference_for_single_image(model, image):
   image = np.asarray(image)
   # The input needs to be a tensor, convert it using `tf.convert_to_tensor`.
