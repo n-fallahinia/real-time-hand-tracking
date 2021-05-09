@@ -12,6 +12,7 @@ def vidCapture(video, size, verbos=False):
     if not cap_success:
         return  
     image_np = imutils.resize(frame, width=size[0])
+    # image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
     (H, W) = image_np.shape[:2]
     if verbos:
         print("frame size is: {0:2d} * {1:2d}".format(W, H))

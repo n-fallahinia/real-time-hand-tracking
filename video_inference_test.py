@@ -1,4 +1,4 @@
-""" Simple script to run a simple inference test from live camera feed 
+""" Simple script to run a simple inference test from a video 
 
 Navid Fallahinia - 21/12/2020
 BioRobotics Lab
@@ -20,7 +20,7 @@ import cv2
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as viz_utils
 
-import utils.camerautils as camera
+from utils.inferenceutils import *
 
 # Initiate argument parser
 parser = argparse.ArgumentParser(
@@ -57,48 +57,47 @@ if __name__ == '__main__':
         except RuntimeError as e:
         # Visible devices must be set before GPUs have been initialized
             print(e)
-
+    # some variables
     PATH_TO_TRACKING_SAVED_MODEL = args.model_dir + "/saved_model"
     PATH_TO_LABELS = args.label_dir
-    # PATH_TO_ESTIMATION_SAVED_MODEL = args.estimation_dir + "/saved_model"
-
+    PATH_TO_VIDEO = '/video/vid.avi'
+    min_score_thresh = 0.4
+    # loading the detection model 
     category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
-
     print('Loading the detection model...', end='')
     start_time = time.time()
     detection_model = tf.saved_model.load(PATH_TO_TRACKING_SAVED_MODEL)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print('Done! Took {} seconds'.format(elapsed_time))
+    # create the tracker object nad the video reader
+    tracker = cv2.TrackerKCF_create()
+    cap = cv2.VideoCapture('vid.avi')
+    while(cap.isOpened()):
+        ret, frame = cap.read()
+        image_np = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        output_dict = run_inference_for_single_image(detection_model, image_np)
+        vis_util.visualize_boxes_and_labels_on_image_array(
+            image_np,
+            output_dict['detection_boxes'],
+            output_dict['detection_classes'],
+            output_dict['detection_scores'],
+            category_index,
+            instance_masks=output_dict.get('detection_masks_reframed', None),
+            use_normalized_coordinates=True,
+            min_score_thresh=min_score_thresh,
+            line_thickness=3)
 
-    # print('Loading the estimation model...', end='')
-    # start_time = time.time()
-    # estimation_model = tf.saved_model.load(PATH_TO_ESTIMATION_SAVED_MODEL)
-    # end_time = time.time()
-    # elapsed_time = end_time - start_time
-    # print('Done! Took {} seconds'.format(elapsed_time))
+        num_box_images = len([i for i in output_dict['detection_scores'] if i > min_score_thresh])
+        # if num_box_images == 3:
+            
+            # find_abstract_boxes()
 
-    # Print PyCapture2 Library Information
-    camera.print_build_info()
-    # Ensure sufficient cameras are found
-    camera.printNumOfCam()
-    # Initializing the camera
-    camera.init()
-    # Video recording
-    fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-    vid = cv2.VideoWriter('output.avi',fourcc, 20.0, (720, 1024))
-    while (True):
-        # Capturing image
-        box_images = camera.capture(detection_model, category_index, vid, display=True, save_vid=False)
-        # print(box_images)
-        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #   The force estimation will go in here
-        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        image_np = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
+
+        cv2.imshow('frame',image_np)
+        if cv2.waitKey(10) & 0xFF == ord('q'):
             break
-    # Discconecting the camera
-    vid.release()
-    cv2.destroyAllWindows()
-    camera.close()
 
-    input('Done! Press Enter to exit...\n')
+    cap.release()
+    cv2.destroyAllWindows()

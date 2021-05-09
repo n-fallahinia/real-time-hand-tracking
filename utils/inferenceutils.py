@@ -26,18 +26,25 @@ def image_crop_single_image(image_np, box, use_normalized_coordinates=True):
   ymin, xmin, ymax, xmax = box
   im_height, im_width, color = image_np.shape
   if use_normalized_coordinates:
-    (left, right, top, bottom) = ( math.floor(xmin * im_width), math.floor(xmax * im_width),
+    (left, right, top, bottom) = (math.floor(xmin * im_width), math.floor(xmax * im_width),
                                   math.floor(ymin * im_height), math.floor(ymax * im_height) )  
     return image_np[top:bottom, left:right]
   else:
     return image_np
 
-def find_abstract_boxes(image_np, box):
-  ymin, xmin, ymax, xmax = box
-  im_height, im_width, color = image_np.shape
-  (left, right, top, bottom) = ( math.floor(xmin * im_width), math.floor(xmax * im_width),
-                                  math.floor(ymin * im_height), math.floor(ymax * im_height) )  
-  return (left, right, top, bottom)
+def find_abstract_boxes(image_np, boxes):
+  boxes_np = np.zeros(boxes.shape)
+  for idx, box in enumerate(boxes):
+    ymin, xmin, ymax, xmax = box
+    im_height, im_width, color = image_np.shape
+    left = math.floor(xmin * im_width)
+    right = math.floor(xmax * im_width)
+    top = math.floor(ymin * im_height)
+    bottom = math.floor(ymax * im_height)
+    w = right - left
+    h = bottom - top 
+    boxes_np[idx] = (left, top, w, h) 
+  return boxes_np
 
 def run_inference_for_single_image(model, image):
   image = np.asarray(image)
