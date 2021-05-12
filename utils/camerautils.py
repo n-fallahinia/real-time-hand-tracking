@@ -110,6 +110,24 @@ def capture(model, category_index, vid ,display=False, save_vid=False ,min_score
         print("Error retrieving buffer : ", fc2Err)
         raise RuntimeError("Error retrieving buffer : ", fc2Err)
 
+def capture_no_detection(min_score_thresh=0.45):
+    """
+        This function captures an image and optionally displays the image using openCV.
+    """
+    if not camInitialised:
+        raise RuntimeError("Camera not initialised. Please intialise with init() method")
+    try:
+        # try retrieving the last image from the camera
+        rawImg = cam.retrieveBuffer()
+        bgrImg = rawImg.convert(PyCapture2.PIXEL_FORMAT.BGR)
+        image_np_bgr = np.array(bgrImg.getData()).reshape((bgrImg.getRows(), bgrImg.getCols(),3)).astype(np.uint8)
+        image_np = cv2.cvtColor(image_np_bgr, cv2.COLOR_BGR2RGB)
+        return image_np
+
+    except PyCapture2.Fc2error as fc2Err:
+        print("Error retrieving buffer : ", fc2Err)
+        raise RuntimeError("Error retrieving buffer : ", fc2Err)
+
 def close():
     """ This function closes the camera connection and stops image capture"""
     global camInitialised

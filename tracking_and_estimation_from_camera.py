@@ -11,6 +11,7 @@ import io
 import argparse
 import imutils
 import time
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'    # Suppress TensorFlow logging (1)
 
 import cv2
 import numpy as np
@@ -23,9 +24,6 @@ from utils.estimationutils import *
 from utils.videoutils import *
 from utils.inferenceutils import *
 import utils.camerautils as camera
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'    # Suppress TensorFlow logging (1)
-
 
 # Initiate argument parser
 parser = argparse.ArgumentParser(
@@ -49,7 +47,7 @@ parser.add_argument("-n", "--finger_number", type=int, default=3,
 parser.add_argument("-l", "--label_dir", help="Path to the label map file.", default='./inference_model_detection/labelmap.pbtxt',
                     type=str)
 
-parser.add_argument("-V", "--verbose", type=bool, default=False,
+parser.add_argument("-V", "--verbose", type=bool, default=True,
                     help="for debuging")
 args = parser.parse_args()
 
@@ -117,8 +115,7 @@ if __name__ == '__main__':
     # Some initial parameters to set  
     desired_object_num = args.finger_number
     init_detection_success = False
-    min_score_thresh = 0.45
-    frame_size = (600, 853)
+    min_score_thresh = 0.5
 
     # grab the appropriate object tracker using our dictionary of
     trackers = cv2.legacy.MultiTracker_create()
@@ -127,79 +124,77 @@ if __name__ == '__main__':
     # Ensure sufficient cameras are found
     camera.printNumOfCam()
     # Initializing the camera
-    print('=================================================')
-    print("Starting the camear feed...")
-    # Video recording
     camera.init()
+    print('=================================================')
+    print('Looking for fingers ... ', end='',flush=True)
     # loop over frames from the video stream
-    # while (True):    
-    #     # if the fingers are not already detected
-    #     if not init_detection_success:
-    #         # captures the first frame until it can find all three fingers in it
-    #         first_frame = vidCapture(video_obj, frame_size, verbos=False)
-    #         first_frame_np = cv2.cvtColor(first_frame, cv2.COLOR_BGR2RGB)
-    #         # initial bounding boxes for the number of fingers 
-    #         # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    #         output_dict = run_inference_for_single_image(detection_model, first_frame_np)
-    #         # # visualize theinitial boxes on the first frame
-    #         vis_util.visualize_boxes_and_labels_on_image_array(
-    #             first_frame_np,
-    #             output_dict['detection_boxes'],
-    #             output_dict['detection_classes'],
-    #             output_dict['detection_scores'],
-    #             category_index,
-    #             instance_masks=output_dict.get('detection_masks_reframed', None),
-    #             use_normalized_coordinates=True,
-    #             min_score_thresh=min_score_thresh,
-    #             line_thickness=3)
-    #         num_box_images = len([i for i in output_dict['detection_scores'] if i > min_score_thresh])
-    #         if args.verbose:
-    #             first_image_np = cv2.cvtColor(first_frame_np, cv2.COLOR_BGR2RGB)
-    #             cv2.imshow('Detection_First_Frame',first_image_np)
-    #             key = cv2.waitKey(20) & 0xFF
-    #         # end of the detection part check to see if it has found the right number of fingers 
-    #         if num_box_images == desired_object_num:
-    #             # updating the tracking with initial bounding boxes
-    #             init_detection_success = True
-    #             init_boxes_np = find_abstract_boxes(first_frame_np, output_dict['detection_boxes'][:desired_object_num])
-    #             init_boxes = tuple(map(tuple, init_boxes_np))
-    #             print("{:2d} initial fingers have been detetcted".format(num_box_images))
-    #             for found_object_num in range(num_box_images):
-    #                 tracker = OPENCV_OBJECT_TRACKERS[args.tracker]()
-    #                 trackers.add(tracker, first_frame_np, init_boxes[found_object_num])
-    #     # all three fingers have already been detected in the initial frames
-    #     else:
-    #         fps = FPS().start()
-    #         frame_np = vidCapture(video_obj, frame_size)
-    #         # check if the captured frame does exist
-    #         if frame_np is None:
-    #             print("No frame found at {:.2f}".format(fps.fps()))
-    #             break
-    #         # update the box locations in each new frame
-    #         success, boxes = trackers.update(frame_np)
-    #         if success:
-    #             fps.update()
-    #             fps.stop()
-    #             frame_np = boxProcess(boxes, frame_np)
-    #             info = [("Tracker", args.tracker), ("Success", "Yes" if success else "No"), ("FPS", "{:.2f}".format(fps.fps()))]
-    #             for (i, (k, v)) in enumerate(info):
-    #                 text = "{}: {}".format(k, v)
-    #                 cv2.putText(frame_np, text, (10, frame_size[1] - (
-    #                             (i * 20) + 20)),	cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-    #         # show the output frame
-    #         cv2.imshow("Frame", frame_np)
-    #         key = cv2.waitKey(20) & 0xFF
-    #         # crop the fingers in each frame
-    #         for box_idx, box in enumerate(boxes):
-    #             img_cropped = video_crop_from_frame(frame_np, box)
-    #             estimated_forces = force_from_image_numpy(img_cropped, estimation_model)
-    #             print("\t{:}: fx= {:.2f} | fy={:.2f} | fz={:.2f}".format(FINGERS[box_idx],
-    #                     estimated_forces[0], estimated_forces[1], estimated_forces[2]))
-    #             cv2.imshow("finger {:2d}".format(box_idx), img_cropped)
-    #         print('-----------------------------------------------------')
-    #         # stopping the video
-    #         if key == ord("q"):
-    #             break
+    while (True):    
+        # if the fingers are not already detected
+        if not init_detection_success:
+            # captures the first frame until it can find all three fingers in it
+            first_frame_np = camera.capture_no_detection()
+            # initial bounding boxes for the number of fingers 
+            output_dict = run_inference_for_single_image(detection_model, first_frame_np)
+            # visualize theinitial boxes on the first frame
+            vis_util.visualize_boxes_and_labels_on_image_array(
+                first_frame_np,
+                output_dict['detection_boxes'],
+                output_dict['detection_classes'],
+                output_dict['detection_scores'],
+                category_index,
+                instance_masks=output_dict.get('detection_masks_reframed', None),
+                use_normalized_coordinates=True,
+                min_score_thresh=min_score_thresh,
+                line_thickness=3)
+            num_box_images = len([i for i in output_dict['detection_scores'] if i > min_score_thresh])
+            if args.verbose:
+                first_image_np = cv2.cvtColor(first_frame_np, cv2.COLOR_BGR2RGB)
+                cv2.imshow('Detection_First_Frame',first_image_np)
+                key = cv2.waitKey(20) & 0xFF
+            # end of the detection part check to see if it has found the right number of fingers 
+            if num_box_images == desired_object_num:
+                # updating the tracking with initial bounding boxes
+                init_detection_success = True
+                init_boxes_np = find_abstract_boxes(first_frame_np, output_dict['detection_boxes'][:desired_object_num])
+                init_boxes = tuple(map(tuple, init_boxes_np))
+                print('Done!')
+                print("{:2d} initial fingers have been detetcted".format(num_box_images))
+                for found_object_num in range(num_box_images):
+                    tracker = OPENCV_OBJECT_TRACKERS[args.tracker]()
+                    trackers.add(tracker, first_frame_np, init_boxes[found_object_num])
+        # all three fingers have already been detected in the initial frames
+        else:
+            frame_np = camera.capture_no_detection()
+            frame_np = cv2.cvtColor(frame_np, cv2.COLOR_BGR2RGB)
+            # check if the captured frame does exist
+            if frame_np is None:
+                print("No frame found !!")
+                break
+            # update the box locations in each new frame
+            success, boxes = trackers.update(frame_np)
+            if success:
+                frame_np = boxProcess(boxes, frame_np)
+                info = [("Tracker", args.tracker), ("Success", "Yes" if success else "No"), ("FPS", "{:.2f}".format(20))]
+                for (i, (k, v)) in enumerate(info):
+                    text = "{}: {}".format(k, v)
+                    cv2.putText(frame_np, text, (10, 1024 - (
+                                (i * 20) + 20)),	cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                                
+                # crop the fingers in each frame
+                for box_idx, box in enumerate(boxes):
+                    img_cropped = video_crop_from_frame(frame_np, box)
+                    estimated_forces = force_from_image_numpy(img_cropped, estimation_model)
+                    print("\t{:}: fx= {:.2f} | fy={:.2f} | fz={:.2f}".format(FINGERS[box_idx],
+                        estimated_forces[0], estimated_forces[1], estimated_forces[2]))
+                    cv2.imshow("finger {:2d}".format(box_idx), img_cropped)
+                print('-----------------------------------------------------')
+            # show the output frame
+            cv2.imshow("Frame", frame_np)
+            key = cv2.waitKey(20) & 0xFF
+
+            # stopping the video
+            if key == ord("q"):
+                break
 
     cv2.destroyAllWindows()
     camera.close()

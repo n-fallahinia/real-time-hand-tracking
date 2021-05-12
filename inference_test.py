@@ -71,13 +71,6 @@ if __name__ == '__main__':
     elapsed_time = end_time - start_time
     print('Done! Took {} seconds'.format(elapsed_time))
 
-    # print('Loading the estimation model...', end='')
-    # start_time = time.time()
-    # estimation_model = tf.saved_model.load(PATH_TO_ESTIMATION_SAVED_MODEL)
-    # end_time = time.time()
-    # elapsed_time = end_time - start_time
-    # print('Done! Took {} seconds'.format(elapsed_time))
-
     # Print PyCapture2 Library Information
     camera.print_build_info()
     # Ensure sufficient cameras are found
@@ -90,10 +83,6 @@ if __name__ == '__main__':
     while (True):
         # Capturing image
         box_images = camera.capture(detection_model, category_index, vid, display=True, save_vid=False)
-        # print(box_images)
-        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        #   The force estimation will go in here
-        # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     # Discconecting the camera
